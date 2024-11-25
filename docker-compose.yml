@@ -18,6 +18,8 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
     command: npx ts-node-dev --respawn --transpile-only /usr/src/app/src/index.ts
+    env_file:
+      - .env
 
   rabbitmq:
     image: rabbitmq:3-management
