@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
-import axios from 'axios';
+import { generateNewToken } from '../utils/token-manager';
 
 interface ApiResponse {
   data: {
     token: string;
+    expiresIn: Date;
   };
 }
 
@@ -14,22 +15,7 @@ export const generateToken = async (
   try {
     const { username, password } = req.body;
 
-    const response = await axios.post<ApiResponse>(
-      `${process.env.BASE_URL}/api/v1/token`,
-      {
-        username,
-        password,
-      }
-    );
-
-    const { token } = response.data.data;
-
-    if (!token) {
-      res.status(500).json({
-        message: 'Token not found in response. Please try again later.',
-      });
-      return;
-    }
+    const { token } = await generateNewToken(username, password);
 
     res.status(200).json({ token });
   } catch (error) {
