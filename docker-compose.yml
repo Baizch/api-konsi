@@ -1,0 +1,46 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: konsi-api
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./src:/usr/src/app/src
+    depends_on:
+      - rabbitmq
+      - redis
+      - elasticsearch
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - RABBITMQ_HOST=rabbitmq
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+    command: npx ts-node-dev --respawn --transpile-only /usr/src/app/src/index.ts
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: konsi-rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  redis:
+    image: redis:6
+    container_name: konsi-redis
+    ports:
+      - '6379:6379'
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    container_name: konsi-elasticsearch
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+    environment:
+      - discovery.type=single-node
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
