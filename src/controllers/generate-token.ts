@@ -1,12 +1,6 @@
 import { Request, Response } from 'express';
 import { generateNewToken } from '../utils/token-manager';
-
-interface ApiResponse {
-  data: {
-    token: string;
-    expiresIn: Date;
-  };
-}
+import { translateMessage } from '../utils/translate-messages';
 
 export const generateToken = async (
   req: Request,
@@ -15,14 +9,27 @@ export const generateToken = async (
   try {
     const { username, password } = req.body;
 
-    const { token } = await generateNewToken(username, password);
+    if (!username || !password) {
+      res.status(400).json({
+        success: false,
+        message: 'Username and password are required.',
+      });
+      return;
+    }
 
-    res.status(200).json({ token });
-  } catch (error) {
+    const tokenResponse = await generateNewToken({ username, password });
+
+    res.status(200).json(tokenResponse);
+  } catch (error: any) {
+    const observations = error.response?.data?.observations || null;
+
+    const translatedErrorMessage = translateMessage(observations);
+
     res.status(500).json({
+      success: false,
       message:
-        'There was an error trying to generate the token. Please try again later',
-      error: error,
+        'There was an error trying to generate the token. Please try again later.',
+      details: translatedErrorMessage,
     });
   }
 };

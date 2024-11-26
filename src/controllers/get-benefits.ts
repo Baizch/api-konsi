@@ -6,6 +6,7 @@ import {
   isTokenValid,
   setToken,
 } from '../utils/token-manager';
+import { translateMessage } from '../utils/translate-messages';
 
 export const getBenefits = async (
   req: Request,
@@ -14,21 +15,24 @@ export const getBenefits = async (
   const { cpf } = req.query;
 
   if (!cpf) {
-    res.status(400).json({ message: 'CPF is required' });
+    res.status(400).json({
+      success: false,
+      message: 'CPF is required.',
+    });
     return;
   }
 
   try {
     let { token } = await getToken();
 
-    console.log(token);
-
     if (!(await isTokenValid())) {
-      const { token: newToken } = await generateNewToken(
-        process.env.API_USERNAME!,
-        process.env.API_PASSWORD!
-      );
-      token = newToken;
+      const tokenResponse = await generateNewToken({
+        username: process.env.API_USERNAME!,
+        password: process.env.API_PASSWORD!,
+      });
+
+      const { token, expiresIn } = tokenResponse.data;
+      await setToken(token, new Date(expiresIn));
     }
 
     const response = await axios.get(
@@ -39,14 +43,20 @@ export const getBenefits = async (
       }
     );
 
-    console.log(response);
+    res.status(200).json({
+      success: true,
+      data: response.data.data,
+    });
+  } catch (error: any) {
+    const observations = error.response?.data?.observations || null;
 
-    res.status(200).json(response.data);
-  } catch (error) {
-    res.status(500).json({
+    const translatedMessage = translateMessage(observations);
+
+    res.status(error.response?.status || 500).json({
+      success: false,
       message:
         'There was an error trying to fetch the benefits. Please try again later.',
-      error: error,
+      details: translatedMessage,
     });
   }
 };

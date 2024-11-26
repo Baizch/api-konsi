@@ -1,10 +1,12 @@
 import redisClient from '../config/redis-client';
 import axios from 'axios';
 
-interface ApiResponse {
+interface ExternalApiResponse {
+  success: boolean;
   data: {
     token: string;
-    expiresIn: Date;
+    type: string;
+    expiresIn: string;
   };
 }
 
@@ -16,29 +18,31 @@ interface GetTokenResponse {
 const TOKEN_KEY = 'api_token';
 const EXPIRY_KEY = 'api_token_expiry';
 
-export const generateNewToken = async (username: string, password: string) => {
+export const generateNewToken = async (credentials: {
+  username: string;
+  password: string;
+}): Promise<ExternalApiResponse> => {
+  const { username, password } = credentials;
+
   if (!username || !password) {
     throw new Error('Missing username or password!');
   }
 
-  const response = await axios.post<ApiResponse>(
+  const response = await axios.post<ExternalApiResponse>(
     `${process.env.BASE_URL}/api/v1/token`,
-    {
-      username,
-      password,
-    }
+    { username, password }
   );
 
-  const { token, expiresIn } = response.data.data;
+  const { success, data } = response.data;
 
-  if (!token) {
-    throw new Error('Token not found in response');
+  if (!success || !data.token) {
+    throw new Error('Failed to generate token from external API.');
   }
 
-  const expiresAt = new Date(expiresIn);
-  await setToken(token, expiresAt);
+  const expiresAt = new Date(data.expiresIn);
+  await setToken(data.token, expiresAt);
 
-  return { token, expiresAt };
+  return response.data;
 };
 
 export const setToken = async (token: string, expiresAt: Date) => {
