@@ -1,13 +1,14 @@
 services:
-  app:
+  backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backend
     container_name: konsi-api
     ports:
       - '3000:3000'
     volumes:
-      - ./src:/usr/src/app/src
+      - ./backend:/app
+      - ./backend/.env:/app/.env
     depends_on:
       - rabbitmq
       - redis
@@ -18,9 +19,24 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - ELASTICSEARCH_URL=https://elasticsearch:9200
-    command: npx ts-node-dev --respawn --transpile-only /usr/src/app/src/index.ts
-    env_file:
-      - .env
+    networks:
+      - mynetwork
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: konsi-ui
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./frontend:/app
+      - ./frontend/.env:/app/.env
+      - /app/node_modules
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: development
     networks:
       - mynetwork
 
