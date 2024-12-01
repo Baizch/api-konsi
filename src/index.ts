@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import express from 'express';
+import cors from 'cors';
 import { Channel } from 'amqplib';
 import { getChannel } from './config/rabbitmq-client';
 import { startConsuming } from './utils/consume-from-queue';
@@ -14,6 +15,14 @@ const PORT = process.env.PORT || 3000;
 let channel: Channel;
 
 app.use(express.json());
+
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+};
+
+app.use(cors(corsOptions));
 
 app.use('/api/v1', generateTokenRoute);
 app.use('/api/v1', getBenefitsRoute);
