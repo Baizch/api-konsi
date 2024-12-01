@@ -82,8 +82,8 @@ Antes de começar, certifique-se de ter:
      - Iniciar a aplicação e o envio de CPFs para a fila do RabbitMQ.
      - Começar o processamento dos CPFs, deixando a aplicação pronta para consumo pelo frontend.
 
-3. **Acesse os Serviços**
-Após a inicialização:
+3. **Acesse os Serviços** 
+- Após a inicialização:
     - A API estará disponível em: http://localhost:3000
     - O frontend estará disponível em:
       - http://localhost:5173
