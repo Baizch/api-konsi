@@ -13,22 +13,30 @@ const GetBenefits = () => {
     setLoading(true);
     setError(null);
 
-    try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/get-benefits?cpf=${cpf}`
-      );
-      if (response.data.success) {
-        const benefitsData = response.data.data
-          .map((item) => item.benefits)
-          .flat();
+    if (cpf) {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/get-benefits?cpf=${cpf}`
+        );
+        if (response.data.success) {
+          const benefitsData = response.data.data
+            .map((item) => item.benefits)
+            .flat();
 
-        setBenefits(benefitsData);
-      } else {
-        setError('Nenhum benefício encontrado para o CPF informado');
+          setBenefits(benefitsData);
+        } else {
+          setError('Nenhum benefício encontrado para o CPF informado');
+        }
+      } catch (error) {
+        setError(
+          'Erro ao buscar benefícios. CPF inválido ou inexistente',
+          error
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setError('Erro ao buscar benefícios.', error);
-    } finally {
+    } else {
+      setError('Por favor, insira um CPF.');
       setLoading(false);
     }
   };
