@@ -1,6 +1,9 @@
 import redisClient from '../config/redis-client';
 import { GetTokenResponse } from '../interfaces/api-responses';
 
+const TOKEN_KEY = 'api_token';
+const EXPIRY_KEY = 'api_token_expiry';
+
 export const setToken = async (
   token: string,
   expiresIn: string
@@ -19,13 +22,13 @@ export const setToken = async (
 
   const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
-  await redisClient.set(process.env.TOKEN_KEY, token);
-  await redisClient.set(process.env.EXPIRY_KEY, expiresAt.toISOString());
+  await redisClient.set(TOKEN_KEY, token);
+  await redisClient.set(EXPIRY_KEY, expiresAt.toISOString());
 };
 
 export const getToken = async (): Promise<GetTokenResponse> => {
-  const token = await redisClient.get(process.env.TOKEN_KEY);
-  const expiry = await redisClient.get(process.env.EXPIRY_KEY);
+  const token = await redisClient.get(TOKEN_KEY);
+  const expiry = await redisClient.get(EXPIRY_KEY);
 
   return {
     token,
