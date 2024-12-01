@@ -3,8 +3,8 @@ import { Client } from '@elastic/elasticsearch';
 export const elasticClient = new Client({
   node: process.env.ELASTICSEARCH_URL || 'https://elasticsearch:9200',
   auth: {
-    username: process.env.ELASTICSEARCH_USERNAME,
-    password: process.env.ELASTICSEARCH_PASSWORD,
+    username: process.env.ELASTICSEARCH_USERNAME || 'elastic',
+    password: process.env.ELASTICSEARCH_PASSWORD || '2XmfUxpGy6wjvfD9l5c_',
   },
   tls: {
     rejectUnauthorized: false,
@@ -35,7 +35,7 @@ export const indexData = async (index: string, id: string, body: object) => {
 
     return response;
   } catch (error) {
-    console.error(`Error indexing data in Elasticsearch: ${error.message}.`);
+    console.error(`Error indexing data in Elasticsearch: ${error}.`);
   }
 };
 

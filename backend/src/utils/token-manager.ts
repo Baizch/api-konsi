@@ -39,7 +39,19 @@ export const getToken = async (): Promise<GetTokenResponse> => {
 export const isTokenValid = async (): Promise<boolean> => {
   const { token, expiresAt } = await getToken();
 
-  if (!token || !expiresAt) return false;
+  if (!token || !expiresAt) {
+    console.log('Token not found or expiry date missing.');
+    return false;
+  }
 
-  return new Date() < expiresAt;
+  const now = new Date();
+  console.log(`Current time: ${now}, Token expires at: ${expiresAt}`);
+
+  if (now >= expiresAt) {
+    console.log('Token has expired.');
+    return false;
+  }
+
+  console.log('Token is still valid.');
+  return true;
 };
