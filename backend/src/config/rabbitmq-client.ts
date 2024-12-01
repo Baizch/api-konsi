@@ -40,5 +40,4 @@ export const getChannel = async (): Promise<Channel> => {
 export const sendToQueue = async (cpf: string): Promise<void> => {
   const channel = await getChannel();
   channel.sendToQueue('cpf_queue', Buffer.from(cpf));
-  console.log(`CPF ${cpf} sent to queue`);
 };

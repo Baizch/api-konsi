@@ -8,7 +8,6 @@ export const sendCpfsToQueue = async (channel: Channel) => {
 
     cpfs.forEach((cpf: string) => {
       channel.sendToQueue('cpf_queue', Buffer.from(cpf));
-      console.log(`CPF ${cpf} sent to queue`);
     });
 
     console.log('CPFs sent to queue successfully.');

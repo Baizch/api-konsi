@@ -51,7 +51,7 @@ export const getBenefitsService = async (cpf: string) => {
 
       token = tokenData.token;
 
-      console.log('Using cached token:', token);
+      console.log('Using cached token');
     }
 
     if (!token) {
