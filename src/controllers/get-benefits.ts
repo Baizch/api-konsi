@@ -1,62 +1,51 @@
 import { Request, Response } from 'express';
-import axios from 'axios';
-import {
-  generateNewToken,
-  getToken,
-  isTokenValid,
-  setToken,
-} from '../utils/token-manager';
-import { translateMessage } from '../utils/translate-messages';
+import { sendToQueue } from '../config/rabbitmq-client';
+import { searchData } from '../config/elasticsearch-client';
 
-export const getBenefits = async (
+export const getBenefitsController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { cpf } = req.query;
-
-  if (!cpf) {
-    res.status(400).json({
-      success: false,
-      message: 'CPF is required.',
-    });
-    return;
-  }
-
   try {
-    let { token } = await getToken();
+    const { cpf } = req.query;
 
-    if (!(await isTokenValid())) {
-      const tokenResponse = await generateNewToken({
-        username: process.env.API_USERNAME!,
-        password: process.env.API_PASSWORD!,
+    if (!cpf) {
+      res.status(400).json({
+        success: false,
+        message: 'CPF is required.',
       });
-
-      const { token, expiresIn } = tokenResponse.data;
-      await setToken(token, new Date(expiresIn));
+      return;
     }
 
-    const response = await axios.get(
-      `${process.env.BASE_URL}/api/v1/inss/consulta-beneficios`,
-      {
-        params: { cpf },
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    res.status(200).json({
-      success: true,
-      data: response.data.data,
+    const elasticsearchResults = await searchData('benefits', {
+      match: {
+        _id: cpf,
+      },
     });
-  } catch (error: any) {
-    const observations = error.response?.data?.observations || null;
 
-    const translatedMessage = translateMessage(observations);
+    if (elasticsearchResults.length > 0) {
+      console.log(`Data found in Elasticsearch for CPF: ${cpf}`);
+      console.log(elasticsearchResults);
 
-    res.status(error.response?.status || 500).json({
+      res.status(200).json({
+        success: true,
+        data: elasticsearchResults,
+      });
+      return;
+    }
+
+    console.log(`Data not found for CPF: ${cpf}. Adding to RabbitMQ queue.`);
+    await sendToQueue(cpf as string);
+
+    res.status(202).json({
+      success: true,
+      message: 'Data is being processed. Wait a moment please',
+    });
+    return;
+  } catch (error) {
+    res.status(500).json({
       success: false,
-      message:
-        'There was an error trying to fetch the benefits. Please try again later.',
-      details: translatedMessage,
+      message: error.message,
     });
   }
 };

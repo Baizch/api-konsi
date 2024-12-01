@@ -14,12 +14,15 @@ services:
       - elasticsearch
     environment:
       - NODE_ENV=development
-      - REDIS_HOST=redis
+      - REDIS_URL=redis://redis:6379
       - RABBITMQ_HOST=rabbitmq
-      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+      - RABBITMQ_PORT=5672
+      - ELASTICSEARCH_URL=https://elasticsearch:9200
     command: npx ts-node-dev --respawn --transpile-only /usr/src/app/src/index.ts
     env_file:
       - .env
+    networks:
+      - mynetwork
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -30,15 +33,26 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - mynetwork
+    logging:
+      driver: 'none'
 
   redis:
     image: redis:6
     container_name: konsi-redis
     ports:
       - '6379:6379'
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - redis-data:/data
+    networks:
+      - mynetwork
+    logging:
+      driver: 'none'
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
     container_name: konsi-elasticsearch
     ports:
       - '9200:9200'
@@ -46,3 +60,16 @@ services:
     environment:
       - discovery.type=single-node
       - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      - 'logger.level=error'
+      - ELASTIC_PASSWORD=2XmfUxpGy6wjvfD9l5c_
+    mem_limit: 4g
+    cpus: 2.0
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
+
+volumes:
+  redis-data:

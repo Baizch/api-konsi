@@ -1,58 +1,31 @@
 import redisClient from '../config/redis-client';
-import axios from 'axios';
+import { GetTokenResponse } from '../interfaces/api-responses';
 
-interface ExternalApiResponse {
-  success: boolean;
-  data: {
-    token: string;
-    type: string;
-    expiresIn: string;
-  };
-}
-
-interface GetTokenResponse {
-  token: string | null;
-  expiresAt: Date | null;
-}
-
-const TOKEN_KEY = 'api_token';
-const EXPIRY_KEY = 'api_token_expiry';
-
-export const generateNewToken = async (credentials: {
-  username: string;
-  password: string;
-}): Promise<ExternalApiResponse> => {
-  const { username, password } = credentials;
-
-  if (!username || !password) {
-    throw new Error('Missing username or password!');
+export const setToken = async (
+  token: string,
+  expiresIn: string
+): Promise<void | Error> => {
+  if (!token || typeof token !== 'string') {
+    throw new Error(
+      'Invalid token: Cannot save null or undefined token to Redis.'
+    );
   }
 
-  const response = await axios.post<ExternalApiResponse>(
-    `${process.env.BASE_URL}/api/v1/token`,
-    { username, password }
-  );
+  const expiresInSeconds = parseInt(expiresIn, 10);
 
-  const { success, data } = response.data;
-
-  if (!success || !data.token) {
-    throw new Error('Failed to generate token from external API.');
+  if (isNaN(expiresInSeconds) || expiresInSeconds <= 0) {
+    throw new Error('expiresIn must be a valid number of seconds.');
   }
 
-  const expiresAt = new Date(data.expiresIn);
-  await setToken(data.token, expiresAt);
+  const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
-  return response.data;
-};
-
-export const setToken = async (token: string, expiresAt: Date) => {
-  await redisClient.set(TOKEN_KEY, token);
-  await redisClient.set(EXPIRY_KEY, expiresAt.toISOString());
+  await redisClient.set(process.env.TOKEN_KEY, token);
+  await redisClient.set(process.env.EXPIRY_KEY, expiresAt.toISOString());
 };
 
 export const getToken = async (): Promise<GetTokenResponse> => {
-  const token = await redisClient.get(TOKEN_KEY);
-  const expiry = await redisClient.get(EXPIRY_KEY);
+  const token = await redisClient.get(process.env.TOKEN_KEY);
+  const expiry = await redisClient.get(process.env.EXPIRY_KEY);
 
   return {
     token,
@@ -62,6 +35,8 @@ export const getToken = async (): Promise<GetTokenResponse> => {
 
 export const isTokenValid = async (): Promise<boolean> => {
   const { token, expiresAt } = await getToken();
+
   if (!token || !expiresAt) return false;
+
   return new Date() < expiresAt;
 };
